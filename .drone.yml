@@ -22,13 +22,13 @@ steps:
     event:
     - push
 
-- name: push_image_to_quay
+- name: push_image_to_ecr
   pull: if-not-exists
   image: *acp-docker-image
   commands:
-    - docker login --username=$${DOCKER_USERNAME} --password=$${DOCKER_PASSWORD} quay.io
-    - docker tag dq-docker-chisel:b-$${DRONE_BUILD_NUMBER} quay.io/ukhomeofficedigital/dq-docker-chisel:b-$${DRONE_BUILD_NUMBER}
-    - docker push quay.io/ukhomeofficedigital/dq-docker-chisel:b-$${DRONE_BUILD_NUMBER}
+    - docker login --username=$${DOCKER_USERNAME} --password=$${DOCKER_PASSWORD} docker.digital.homeoffice.gov.uk
+    - docker tag dq-docker-chisel:b-$${DRONE_BUILD_NUMBER} docker.digital.homeoffice.gov.uk/dq-docker-chisel:b-$${DRONE_BUILD_NUMBER}
+    - docker push docker.digital.homeoffice.gov.uk/dq-docker-chisel:b-$${DRONE_BUILD_NUMBER}
   environment:
     DOCKER_USERNAME:
       from_secret: docker_username
@@ -45,7 +45,7 @@ steps:
   pull: if-not-exists
   image: *trivy-image
   commands:
-  - trivy image --ignore-unfixed --exit-code 0 --no-progress quay.io/ukhomeofficedigital/dq-docker-chisel:b-${DRONE_BUILD_NUMBER}
+  - trivy image --ignore-unfixed --exit-code 0 --no-progress docker.digital.homeoffice.gov.uk/dq-docker-chisel:b-${DRONE_BUILD_NUMBER}
   when:
     branch:
       exclude:
@@ -54,13 +54,13 @@ steps:
       - push
 
 
-- name: push_master_image_to_quay
+- name: push_master_image_to_ecr
   pull: if-not-exists
   image: *acp-docker-image
   commands:
-    - docker login --username=$${DOCKER_USERNAME} --password=$${DOCKER_PASSWORD} quay.io
-    - docker tag dq-docker-chisel:b-$${DRONE_BUILD_NUMBER} quay.io/ukhomeofficedigital/dq-docker-chisel:b-$${DRONE_BUILD_NUMBER}
-    - docker push quay.io/ukhomeofficedigital/dq-docker-chisel:b-$${DRONE_BUILD_NUMBER}
+    - docker login --username=$${DOCKER_USERNAME} --password=$${DOCKER_PASSWORD} docker.digital.homeoffice.gov.uk
+    - docker tag dq-docker-chisel:b-$${DRONE_BUILD_NUMBER} docker.digital.homeoffice.gov.uk/dq-docker-chisel:b-$${DRONE_BUILD_NUMBER}
+    - docker push docker.digital.homeoffice.gov.uk/dq-docker-chisel:b-$${DRONE_BUILD_NUMBER}
   environment:
     DOCKER_USERNAME:
       from_secret: docker_username
@@ -76,7 +76,7 @@ steps:
   pull: if-not-exists
   image: *trivy-image
   commands:
-  - trivy image --ignore-unfixed --exit-code 0 --no-progress quay.io/ukhomeofficedigital/dq-docker-chisel:b-${DRONE_BUILD_NUMBER}
+  - trivy image --ignore-unfixed --exit-code 0 --no-progress docker.digital.homeoffice.gov.uk/dq-docker-chisel:b-${DRONE_BUILD_NUMBER}
   when:
     branch:
       - master
@@ -89,10 +89,10 @@ steps:
   image: *acp-docker-image
   commands:
     - /usr/local/bin/wait
-    - docker login --username=$${DOCKER_USERNAME} --password=$${DOCKER_PASSWORD} quay.io
-    - docker pull quay.io/ukhomeofficedigital/dq-docker-chisel:b-$${DRONE_BUILD_PARENT}
-    - docker tag quay.io/ukhomeofficedigital/dq-docker-chisel:b-$${DRONE_BUILD_PARENT} quay.io/ukhomeofficedigital/dq-docker-chisel:latest
-    - docker push quay.io/ukhomeofficedigital/dq-docker-chisel:latest
+    - docker login --username=$${DOCKER_USERNAME} --password=$${DOCKER_PASSWORD} docker.digital.homeoffice.gov.uk
+    - docker pull docker.digital.homeoffice.gov.uk/dq-docker-chisel:b-$${DRONE_BUILD_PARENT}
+    - docker tag docker.digital.homeoffice.gov.uk/dq-docker-chisel:b-$${DRONE_BUILD_PARENT} docker.digital.homeoffice.gov.uk/dq-docker-chisel:latest
+    - docker push docker.digital.homeoffice.gov.uk/dq-docker-chisel:latest
   environment:
     DOCKER_PASSWORD:
       from_secret: docker_password
