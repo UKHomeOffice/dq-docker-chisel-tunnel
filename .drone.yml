@@ -42,7 +42,7 @@ steps:
   when:
     branch:
       exclude:
-      - master
+      - main
     event:
     - push
 
@@ -60,7 +60,7 @@ steps:
   when:
     branch:
       exclude:
-        - master
+        - main
     event:
       - push
 
@@ -81,7 +81,7 @@ steps:
     - docker push $${ECR_REPO}:b-$${DRONE_BUILD_NUMBER}
   when:
     branch:
-      - master
+      - main
     event:
     - push
 
@@ -93,7 +93,7 @@ steps:
   - trivy image --ignore-unfixed --exit-code 0 --no-progress $${ECR_REPO}:b-$${DRONE_BUILD_NUMBER}
   when:
     branch:
-      - master
+      - main
     event:
       - push
 
@@ -114,7 +114,7 @@ steps:
     - docker push $${ECR_REPO}:latest
   when:
     branch:
-      - master
+      - main
     event:
       - promote
     target:
