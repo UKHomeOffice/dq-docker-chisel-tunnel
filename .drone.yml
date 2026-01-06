@@ -1,0 +1,126 @@
+---
+global-variables:
+  acp-docker-image: &acp-docker-image 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/dind:latest
+  trivy-image: &trivy-image quay.io/ukhomeofficedigital/trivyscanner:master
+  vault-image: &vault-image  docker.digital.homeoffice.gov.uk/dq/dq-vault-awscli:1.43
+
+environment:
+  ECR_REPO: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/dq/dq-docker-chisel-tunnel
+
+kind: pipeline
+name: default
+type: kubernetes
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: build_docker_image
+  pull: if-not-exists
+  image: *acp-docker-image
+  commands:
+    - /usr/local/bin/wait
+    - docker build --tag dq-docker-chisel-tunnel:b-$${DRONE_BUILD_NUMBER} .
+  when:
+    event:
+    - push
+
+- name: push_image_to_ecr
+  pull: if-not-exists
+  image: *acp-docker-image
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+  commands:
+    - apk add --no-cache aws-cli
+    - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com
+    - docker tag dq-docker-chisel-tunnel:b-$${DRONE_BUILD_NUMBER} $${ECR_REPO}:b-$${DRONE_BUILD_NUMBER}
+    - docker push $${ECR_REPO}:b-$${DRONE_BUILD_NUMBER}
+  when:
+    branch:
+      exclude:
+      - master
+    event:
+    - push
+
+- name: trivy_scan
+  pull: if-not-exists
+  image: *trivy-image
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+  commands:
+  - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com
+  - trivy image --ignore-unfixed --exit-code 0 --no-progress $${ECR_REPO}:b-$${DRONE_BUILD_NUMBER}
+  when:
+    branch:
+      exclude:
+        - master
+    event:
+      - push
+
+- name: push_master_image_to_ecr
+  pull: if-not-exists
+  image: *acp-docker-image
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+  commands:
+    - apk add --no-cache aws-cli
+    - aws ecr get-login-password --region eu-west-2 | docker login \
+          --username AWS \
+          --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com 
+    - docker tag dq-docker-chisel:b-$${DRONE_BUILD_NUMBER} $${ECR_REPO}:b-$${DRONE_BUILD_NUMBER}
+    - docker push $${ECR_REPO}:b-$${DRONE_BUILD_NUMBER}
+  when:
+    branch:
+      - master
+    event:
+    - push
+
+- name: trivy_scan_master
+  pull: if-not-exists
+  image: *trivy-image
+  commands:
+  - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com
+  - trivy image --ignore-unfixed --exit-code 0 --no-progress $${ECR_REPO}:b-$${DRONE_BUILD_NUMBER}
+  when:
+    branch:
+      - master
+    event:
+      - push
+
+- name: promote_master
+  pull: if-not-exists
+  image: *acp-docker-image
+  environment:
+    AWS_ACCESS_KEY_ID:
+      from_secret: aws_access_key_id
+    AWS_SECRET_ACCESS_KEY:
+      from_secret: aws_secret_access_key
+  commands:
+    - aws ecr get-login-password --region eu-west-2 | docker login \
+          --username AWS \
+          --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com 
+    - docker pull $${ECR_REPO}:b-$${DRONE_BUILD_PARENT}
+    - docker tag $${ECR_REPO}:b-$${DRONE_BUILD_PARENT} $${ECR_REPO}:latest \
+    - docker push $${ECR_REPO}:latest
+  when:
+    branch:
+      - master
+    event:
+      - promote
+    target:
+      - production
+
+services:
+- name: docker
+  image: *acp-docker-image
+
