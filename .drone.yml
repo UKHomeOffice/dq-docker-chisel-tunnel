@@ -52,7 +52,6 @@ steps:
     AWS_SECRET_ACCESS_KEY:
       from_secret: aws_secret_access_key
   commands:
-  - apk add --no-cache aws-cli trivy ca-certificates
   - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com
   - trivy image --ignore-unfixed --exit-code 0 --no-progress 340268328991.dkr.ecr.eu-west-2.amazonaws.com/dq/dq-docker-chisel-tunnel:b-$${DRONE_BUILD_NUMBER}
   when:
