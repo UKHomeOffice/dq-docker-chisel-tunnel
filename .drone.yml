@@ -45,7 +45,7 @@ steps:
 
 - name: trivy_scan
   pull: if-not-exists
-  image: *acp-docker-image
+  image: *trivy-image
   environment:
     AWS_ACCESS_KEY_ID:
       from_secret: aws_access_key_id
