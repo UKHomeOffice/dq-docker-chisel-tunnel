@@ -74,9 +74,7 @@ steps:
       from_secret: aws_secret_access_key
   commands:
     - apk add --no-cache aws-cli
-    - aws ecr get-login-password --region eu-west-2 | docker login \
-          --username AWS \
-          --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com 
+    - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com 
     - docker tag dq-docker-chisel:b-$${DRONE_BUILD_NUMBER} $${ECR_REPO}:b-$${DRONE_BUILD_NUMBER}
     - docker push $${ECR_REPO}:b-$${DRONE_BUILD_NUMBER}
   when:
@@ -106,11 +104,9 @@ steps:
     AWS_SECRET_ACCESS_KEY:
       from_secret: aws_secret_access_key
   commands:
-    - aws ecr get-login-password --region eu-west-2 | docker login \
-          --username AWS \
-          --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com 
+    - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com 
     - docker pull $${ECR_REPO}:b-$${DRONE_BUILD_PARENT}
-    - docker tag $${ECR_REPO}:b-$${DRONE_BUILD_PARENT} $${ECR_REPO}:latest \
+    - docker tag $${ECR_REPO}:b-$${DRONE_BUILD_PARENT} $${ECR_REPO}:latest
     - docker push $${ECR_REPO}:latest
   when:
     branch:
@@ -123,4 +119,3 @@ steps:
 services:
 - name: docker
   image: *acp-docker-image
-
