@@ -3,6 +3,7 @@ global-variables:
   acp-docker-image: &acp-docker-image 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/dind:latest
   trivy-image: &trivy-image quay.io/ukhomeofficedigital/trivyscanner:master
   vault-image: &vault-image  docker.digital.homeoffice.gov.uk/dq/dq-vault-awscli:1.43
+  ecr-repo: &ecr-repo 340268328991.dkr.ecr.eu-west-2.amazonaws.com/dq/dq-docker-chisel-tunnel
 
 kind: pipeline
 name: default
@@ -34,8 +35,8 @@ steps:
   commands:
     - apk add --no-cache aws-cli
     - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com
-    - docker tag dq-docker-chisel-tunnel:b-$${DRONE_BUILD_NUMBER} "340268328991.dkr.ecr.eu-west-2.amazonaws.com/dq/dq-docker-chisel-tunnel:b-$${DRONE_BUILD_NUMBER}"
-    - docker push "340268328991.dkr.ecr.eu-west-2.amazonaws.com/dq/dq-docker-chisel-tunnel:b-$${DRONE_BUILD_NUMBER}"
+    - docker tag dq-docker-chisel-tunnel:b-$${DRONE_BUILD_NUMBER} "*ecr-repo:b-$${DRONE_BUILD_NUMBER}"
+    - docker push "*ecr-repo:b-$${DRONE_BUILD_NUMBER}"
   when:
     branch:
       exclude:
@@ -53,7 +54,7 @@ steps:
       from_secret: aws_secret_access_key
   commands:
   - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com
-  - trivy image --ignore-unfixed --exit-code 0 --no-progress 340268328991.dkr.ecr.eu-west-2.amazonaws.com/dq/dq-docker-chisel-tunnel:b-$${DRONE_BUILD_NUMBER}
+  - trivy image --ignore-unfixed --exit-code 0 --no-progress *ecr-repo:b-$${DRONE_BUILD_NUMBER}
   when:
     branch:
       exclude:
@@ -63,20 +64,19 @@ steps:
 
 - name: push_master_image_to_ecr
   pull: if-not-exists
-  image: *vault-image
+  image: *acp-docker-image
   environment:
     AWS_ACCESS_KEY_ID:
       from_secret: aws_access_key_id
     AWS_SECRET_ACCESS_KEY:
       from_secret: aws_secret_access_key
   commands:
+    - apk add --no-cache aws-cli
     - aws ecr get-login-password --region eu-west-2 | docker login \
           --username AWS \
           --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com 
-    - docker tag dq-docker-chisel:b-$${DRONE_BUILD_NUMBER} \
-        340268328991.dkr.ecr.eu-west-2.amazonaws.com/dq/dq-docker-chisel:b-$${DRONE_BUILD_NUMBER}
-    - docker push \
-        340268328991.dkr.ecr.eu-west-2.amazonaws.com/dq/dq-docker-chisel:b-$${DRONE_BUILD_NUMBER}
+    - docker tag dq-docker-chisel:b-$${DRONE_BUILD_NUMBER} *ecr-repo:b-$${DRONE_BUILD_NUMBER}
+    - docker push *ecr-repo:b-$${DRONE_BUILD_NUMBER}
   when:
     branch:
       - master
@@ -87,7 +87,8 @@ steps:
   pull: if-not-exists
   image: *trivy-image
   commands:
-  - trivy image --ignore-unfixed --exit-code 0 --no-progress 340268328991.dkr.ecr.eu-west-2.amazonaws.com/dq/dq-docker-chisel:b-$${DRONE_BUILD_NUMBER}
+  - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com
+  - trivy image --ignore-unfixed --exit-code 0 --no-progress *ecr-repo:b-$${DRONE_BUILD_NUMBER}
   when:
     branch:
       - master
@@ -96,7 +97,7 @@ steps:
 
 - name: promote_master
   pull: if-not-exists
-  image: *vault-image
+  image: *acp-docker-image
   environment:
     AWS_ACCESS_KEY_ID:
       from_secret: aws_access_key_id
@@ -106,10 +107,9 @@ steps:
     - aws ecr get-login-password --region eu-west-2 | docker login \
           --username AWS \
           --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com 
-    - docker pull 340268328991.dkr.ecr.eu-west-2.amazonaws.com/dq/dq-docker-chisel:b-$${DRONE_BUILD_PARENT}
-    - docker tag 340268328991.dkr.ecr.eu-west-2.amazonaws.com/dq/dq-docker-chisel:b-$${DRONE_BUILD_PARENT} 340268328991.dkr.ecr.eu-west-2.amazonaws.com/dq/dq-docker-chisel:latest \
-    - docker push \
-        340268328991.dkr.ecr.eu-west-2.amazonaws.com/dq/dq-docker-chisel:latest
+    - docker pull *ecr-repo:b-$${DRONE_BUILD_PARENT}
+    - docker tag *ecr-repo:b-$${DRONE_BUILD_PARENT} *ecr-repo:latest \
+    - docker push *ecr-repo:latest
   when:
     branch:
       - master
@@ -117,8 +117,6 @@ steps:
       - promote
     target:
       - production
-
-
 
 services:
 - name: docker
