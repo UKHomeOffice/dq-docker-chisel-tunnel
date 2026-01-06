@@ -3,7 +3,9 @@ global-variables:
   acp-docker-image: &acp-docker-image 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/dind:latest
   trivy-image: &trivy-image quay.io/ukhomeofficedigital/trivyscanner:master
   vault-image: &vault-image  docker.digital.homeoffice.gov.uk/dq/dq-vault-awscli:1.43
-  ecr-repo: &ecr-repo 340268328991.dkr.ecr.eu-west-2.amazonaws.com/dq/dq-docker-chisel-tunnel
+
+environment:
+  ECR_REPO: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/dq/dq-docker-chisel-tunnel
 
 kind: pipeline
 name: default
@@ -35,8 +37,8 @@ steps:
   commands:
     - apk add --no-cache aws-cli
     - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com
-    - docker tag dq-docker-chisel-tunnel:b-$${DRONE_BUILD_NUMBER} *ecr-repo:b-$${DRONE_BUILD_NUMBER}
-    - docker push *ecr-repo:b-$${DRONE_BUILD_NUMBER}
+    - docker tag dq-docker-chisel-tunnel:b-$${DRONE_BUILD_NUMBER} $${ECR_REPO}:b-$${DRONE_BUILD_NUMBER}
+    - docker push $${ECR_REPO}:b-$${DRONE_BUILD_NUMBER}
   when:
     branch:
       exclude:
@@ -54,7 +56,7 @@ steps:
       from_secret: aws_secret_access_key
   commands:
   - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com
-  - trivy image --ignore-unfixed --exit-code 0 --no-progress *ecr-repo:b-$${DRONE_BUILD_NUMBER}
+  - trivy image --ignore-unfixed --exit-code 0 --no-progress $${ECR_REPO}:b-$${DRONE_BUILD_NUMBER}
   when:
     branch:
       exclude:
@@ -75,8 +77,8 @@ steps:
     - aws ecr get-login-password --region eu-west-2 | docker login \
           --username AWS \
           --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com 
-    - docker tag dq-docker-chisel:b-$${DRONE_BUILD_NUMBER} *ecr-repo:b-$${DRONE_BUILD_NUMBER}
-    - docker push *ecr-repo:b-$${DRONE_BUILD_NUMBER}
+    - docker tag dq-docker-chisel:b-$${DRONE_BUILD_NUMBER} $${ECR_REPO}:b-$${DRONE_BUILD_NUMBER}
+    - docker push $${ECR_REPO}:b-$${DRONE_BUILD_NUMBER}
   when:
     branch:
       - master
@@ -88,7 +90,7 @@ steps:
   image: *trivy-image
   commands:
   - aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com
-  - trivy image --ignore-unfixed --exit-code 0 --no-progress *ecr-repo:b-$${DRONE_BUILD_NUMBER}
+  - trivy image --ignore-unfixed --exit-code 0 --no-progress $${ECR_REPO}:b-$${DRONE_BUILD_NUMBER}
   when:
     branch:
       - master
@@ -107,9 +109,9 @@ steps:
     - aws ecr get-login-password --region eu-west-2 | docker login \
           --username AWS \
           --password-stdin 340268328991.dkr.ecr.eu-west-2.amazonaws.com 
-    - docker pull *ecr-repo:b-$${DRONE_BUILD_PARENT}
-    - docker tag *ecr-repo:b-$${DRONE_BUILD_PARENT} *ecr-repo:latest \
-    - docker push *ecr-repo:latest
+    - docker pull $${ECR_REPO}:b-$${DRONE_BUILD_PARENT}
+    - docker tag $${ECR_REPO}:b-$${DRONE_BUILD_PARENT} $${ECR_REPO}:latest \
+    - docker push $${ECR_REPO}:latest
   when:
     branch:
       - master
