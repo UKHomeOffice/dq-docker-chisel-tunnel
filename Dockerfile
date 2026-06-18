@@ -6,7 +6,7 @@ RUN apk update && apk upgrade --no-cache
 
 RUN apk add git
 
-ENV CHISEL_VERSION=1.11.3
+ENV CHISEL_VERSION=1.11.6
 ENV CGO_ENABLED 0
 
 RUN go install github.com/jpillora/chisel@v${CHISEL_VERSION}; \
