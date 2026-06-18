@@ -36,6 +36,22 @@ steps:
     event:
     - push
 
+- name: push_image_to_quay
+  pull: if-not-exists
+  image: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/dind
+  commands:
+  - docker login -u="ukhomeofficedigital+dq-docker-chisel" -p=$${DOCKER_PASSWORD} quay.io
+  - docker push quay.io/ukhomeofficedigital/chisel:$${DRONE_COMMIT_SHA}
+  - docker push quay.io/ukhomeofficedigital/chisel:$${DRONE_TAG}
+  environment:
+    DOCKER_PASSWORD:
+      from_secret: DOCKER_PASSWORD
+  when:
+    #branch:
+    #- master
+    event:
+    - push
+
 - name: push_image_to_ecr
   pull: if-not-exists
   image: *acp-docker-image
