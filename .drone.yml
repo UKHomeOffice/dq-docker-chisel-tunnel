@@ -24,7 +24,8 @@ steps:
     - docker build --tag dq-docker-chisel-tunnel:b-$${DRONE_BUILD_NUMBER} .
   when:
     event:
-    - push
+    #- push
+    - pull
 
 - name: build_chisel_image
   pull: if-not-exists
@@ -45,8 +46,8 @@ steps:
   commands:
     # Use standard input pipeline to safely forward the secret string
     - echo "$${DOCKER_PASSWORD}" | docker login -u "ukhomeofficedigital+dq-docker-chisel" --password-stdin quay.io
-    - docker push quay.io/ukhomeofficedigital/chisel:$${DRONE_COMMIT_SHA}
-    - docker push quay.io/ukhomeofficedigital/chisel:$${DRONE_TAG}
+    - docker push quay.io/ukhomeofficedigital/dq-docker-chisel:$${DRONE_COMMIT_SHA}
+    - docker push quay.io/ukhomeofficedigital/dq-docker-chisel:$${DRONE_TAG}
   when:
     event:
     - push
